@@ -1,5 +1,5 @@
 artifact_uri: mlflow-artifacts:/949842723656990069/5fe4a76678e741a79c579747ab335887/artifacts
-end_time: null
+end_time: 1759657381141
 entry_point_name: ''
 experiment_id: '949842723656990069'
 lifecycle_stage: active
@@ -9,6 +9,6 @@ source_name: ''
 source_type: 4
 source_version: ''
 start_time: 1759656769364
-status: 1
+status: 4
 tags: []
 user_id: FrienDotJava
