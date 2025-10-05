@@ -1,0 +1,6 @@
+artifact_location: mlflow-artifacts:/949842723656990069
+creation_time: 1759656769198
+experiment_id: '949842723656990069'
+last_update_time: 1759656769198
+lifecycle_stage: active
+name: Find best parameter

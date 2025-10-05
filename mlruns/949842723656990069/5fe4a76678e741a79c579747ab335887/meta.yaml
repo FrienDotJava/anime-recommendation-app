@@ -1,0 +1,14 @@
+artifact_uri: mlflow-artifacts:/949842723656990069/5fe4a76678e741a79c579747ab335887/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '949842723656990069'
+lifecycle_stage: active
+run_id: 5fe4a76678e741a79c579747ab335887
+run_name: whimsical-pug-429
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759656769364
+status: 1
+tags: []
+user_id: FrienDotJava
