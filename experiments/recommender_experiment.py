@@ -12,6 +12,7 @@ anime_df = pd.read_csv("data/raw/anime.csv")
 rating_df = pd.read_csv("data/raw/rating.csv")
 
 anime_df_cleaned = anime_df.dropna()
+anime_df_cleaned = anime_df_cleaned[anime_df_cleaned['type'] == 'TV']
 
 rating_df_cleaned = rating_df.drop_duplicates()
 
@@ -19,20 +20,12 @@ rating_df_cleaned.loc[rating_df_cleaned['rating']==-1, "rating"] = 0
 
 rating_df_cleaned['rating'] = rating_df_cleaned['rating'].values.astype(np.float32)
 
-# ====================================================================
-# ✨ DATA FILTERING: REMOVING COLD START USERS AND ITEMS ✨
-# ====================================================================
+MIN_USER_RATINGS = 100
 
-# 1. Define filtering thresholds
-# Users must have rated at least MIN_USER_RATINGS anime
-MIN_USER_RATINGS = 20
-# Anime must have been rated by at least MIN_ANIME_RATINGS users
-MIN_ANIME_RATINGS = 20
+MIN_ANIME_RATINGS = 100
 
 print(f"Original rating dataset size: {len(rating_df_cleaned)} ratings.")
 
-# Filter Users (Active Users)
-# Count how many anime each user rated
 user_counts = rating_df_cleaned['user_id'].value_counts()
 # Identify users who meet the minimum rating threshold
 active_users = user_counts[user_counts >= MIN_USER_RATINGS].index
@@ -50,8 +43,6 @@ popular_anime = anime_counts[anime_counts >= MIN_ANIME_RATINGS].index
 rating_df_cleaned = rating_df_cleaned[rating_df_cleaned['anime_id'].isin(popular_anime)]
 
 print(f"After filtering anime (min {MIN_ANIME_RATINGS} ratings): {len(rating_df_cleaned)} ratings.")
-
-# ====================================================================
 
 min_rating = rating_df_cleaned['rating'].min()
 max_rating = rating_df_cleaned['rating'].max()
@@ -90,7 +81,7 @@ rating_df_cleaned['anime'] = rating_df_cleaned['anime_id'].map(anime_to_anime_en
 rating_df_cleaned = rating_df_cleaned.sample(frac=1, random_state=42)
 
 # Pembangunan model
-mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_tracking_uri("https://dagshub.com/FrienDotJava/anime-recommendation-app.mlflow")
 mlflow.set_experiment("Find best parameter")
 with mlflow.start_run():
     # Train test split
@@ -112,44 +103,63 @@ with mlflow.start_run():
 
     regularization_strength = 1e-6
     initializer = 'he_normal'
+    
     class RecommenderNet(tf.keras.Model):
-        # Insialisasi fungsi
         def __init__(self, num_users, num_anime, embedding_size, **kwargs):
             super(RecommenderNet, self).__init__(**kwargs)
             self.num_users = num_users
             self.num_anime = num_anime
             self.embedding_size = embedding_size
-            self.user_embedding = layers.Embedding( # layer embedding user
+            
+            # 1. Standard Embedding Layers
+            self.user_embedding = layers.Embedding( 
                 num_users,
                 embedding_size,
-                embeddings_initializer = initializer,
-                embeddings_regularizer = keras.regularizers.l2(regularization_strength)
+                embeddings_initializer = 'he_normal',
+                embeddings_regularizer = keras.regularizers.l2(1e-6)
             )
-            self.user_bias = layers.Embedding(num_users, 1) # layer embedding user bias
-            self.anime_embedding = layers.Embedding( # layer embeddings anime
+            self.user_bias = layers.Embedding(num_users, 1) 
+            self.anime_embedding = layers.Embedding(
                 num_anime,
                 embedding_size,
-                embeddings_initializer = initializer,
-                embeddings_regularizer = keras.regularizers.l2(regularization_strength)
+                embeddings_initializer = 'he_normal',
+                embeddings_regularizer = keras.regularizers.l2(1e-6)
             )
-            self.anime_bias = layers.Embedding(num_anime, 1) # layer embedding anime bias
-
+            self.anime_bias = layers.Embedding(num_anime, 1) 
+            
+            # 2. Add Dense Layers for Non-Linearity
+            self.dense_layer = layers.Dense(16, activation='relu') # 16 units, ReLU activation
+    
+            # 3. Final Output Layer
+            self.output_layer = layers.Dense(1, activation='sigmoid')
+    
+    
         def call(self, inputs):
-            user_vector = self.user_embedding(inputs[:,0]) # memanggil layer embedding 1
-            user_bias = self.user_bias(inputs[:, 0]) # memanggil layer embedding 2
-            anime_vector = self.anime_embedding(inputs[:, 1]) # memanggil layer embedding 3
-            anime_bias = self.anime_bias(inputs[:, 1]) # memanggil layer embedding 4
-
-            dot_user_anime = tf.tensordot(user_vector, anime_vector, 2)
-
-            x = dot_user_anime + user_bias + anime_bias
-            return tf.nn.sigmoid(x) # activation sigmoid
+            user_vector = self.user_embedding(inputs[:, 0])
+            user_bias = self.user_bias(inputs[:, 0])
+            anime_vector = self.anime_embedding(inputs[:, 1])
+            anime_bias = self.anime_bias(inputs[:, 1])
+    
+            # Interaction 1: Linear Matrix Factorization (Dot Product)
+            dot_product = tf.tensordot(user_vector, anime_vector, 2)
+            
+            # Interaction 2: Concatenate and pass through Dense layers (Non-linear)
+            # Concatenate the user and item vectors
+            combined_vectors = tf.concat([user_vector, anime_vector], axis=1)
+            
+            # Pass the combined vector through the dense layer
+            dense_output = self.dense_layer(combined_vectors)
+            
+            # The final score combines the bias terms with the non-linear output
+            x = dense_output + user_bias + anime_bias
+            
+            return self.output_layer(x)
 
     num_users = len(rating_df_cleaned['user'].unique())
     num_anime = len(rating_df_cleaned['anime'].unique())
 
-    embedding_size = 30
-    learning_rate = 0.001
+    embedding_size = 50
+    learning_rate = 0.0001
     model = RecommenderNet(num_users, num_anime, embedding_size) 
 
     # model compile
@@ -163,12 +173,13 @@ with mlflow.start_run():
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor='val_root_mean_squared_error',
         patience=10,
+        min_delta=0.001,
         mode='min',
         restore_best_weights=True
     )
 
     epoch = 100
-    batch_size = 1024
+    batch_size = 2048
     history = model.fit(
         x = x_train,
         y = y_train,
@@ -188,6 +199,8 @@ with mlflow.start_run():
     mlflow.log_param("learning_rate",learning_rate)
     mlflow.log_param("epoch",epoch)
     mlflow.log_param("batch_size",batch_size)
+    mlflow.log_param("min_user_rating",MIN_USER_RATINGS)
+    mlflow.log_param("min_anime_rating",MIN_ANIME_RATINGS)
     mlflow.log_metric("mse", loss)
     mlflow.log_metric("rmse", rmse)
 
