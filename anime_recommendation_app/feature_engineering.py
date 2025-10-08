@@ -3,117 +3,152 @@ import os
 from helper import load_data, load_params, save_params, save_json, save_data
 
 def load_datasets(params: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
-    preprocessed_anime_path = params['data']['preprocessed_anime_path']
-    cleaned_rating_path = params['data']['cleaned_rating_path']
+    try:
+        preprocessed_anime_path = params['data']['preprocessed_anime_path']
+        cleaned_rating_path = params['data']['cleaned_rating_path']
 
-    anime_df = load_data(preprocessed_anime_path)
-    rating_df = load_data(cleaned_rating_path)
-    return rating_df, anime_df
+        anime_df = load_data(preprocessed_anime_path)
+        rating_df = load_data(cleaned_rating_path)
+        return rating_df, anime_df
+    except Exception as e:
+        raise Exception(f"Error loading datasets: {e}")
 
 
 def merge_datasets(rating_df: pd.DataFrame, anime_df: pd.DataFrame) -> pd.DataFrame:
-    # Merge datasets to get 'type' and 'main_genre' columns
-    df_merge = pd.merge(rating_df, anime_df[['anime_id', 'type', 'main_genre']], on='anime_id')
-    return df_merge
+    try:
+        # Merge datasets to get 'type' and 'main_genre' columns
+        df_merge = pd.merge(rating_df, anime_df[['anime_id', 'type', 'main_genre']], on='anime_id')
+        return df_merge
+    except Exception as e:
+        raise Exception(f"Error mergin datasets: {e}")
 
 
 def filter_user(df: pd.DataFrame, MIN_USER_RATINGS: int) -> pd.DataFrame:
-    user_counts = df['user_id'].value_counts()
-    active_users = user_counts[user_counts >= MIN_USER_RATINGS].index
-    return df[df['user_id'].isin(active_users)]
+    try:
+        user_counts = df['user_id'].value_counts()
+        active_users = user_counts[user_counts >= MIN_USER_RATINGS].index
+        return df[df['user_id'].isin(active_users)]
+    except Exception as e:
+        raise Exception(f"Error filter user: {e}")
 
 
 def filter_anime(df: pd.DataFrame, MIN_ANIME_RATINGS: int) -> pd.DataFrame:
-    anime_counts = df['anime_id'].value_counts()
-    popular_anime = anime_counts[anime_counts >= MIN_ANIME_RATINGS].index
-    return df[df['anime_id'].isin(popular_anime)]
-
+    try:
+        anime_counts = df['anime_id'].value_counts()
+        popular_anime = anime_counts[anime_counts >= MIN_ANIME_RATINGS].index
+        return df[df['anime_id'].isin(popular_anime)]
+    except Exception as e:
+        raise Exception(f"Error filtering anime: {e}")
 
 def filter_dataset(params: dict, df: pd.DataFrame) -> pd.DataFrame:
-    df = df[df['type'] == 'TV'].copy()
+    try:
+        df = df[df['type'] == 'TV'].copy()
 
-    MIN_USER_RATINGS = params['data']['min_user_ratings']
-    MIN_ANIME_RATINGS = params['data']['min_anime_ratings']
+        MIN_USER_RATINGS = params['data']['min_user_ratings']
+        MIN_ANIME_RATINGS = params['data']['min_anime_ratings']
 
-    print(f"Initial filtered TV series ratings: {len(df)}.")
+        print(f"Initial filtered TV series ratings: {len(df)}.")
 
-    df = filter_user(df, MIN_USER_RATINGS)
+        df = filter_user(df, MIN_USER_RATINGS)
 
-    df = filter_anime(df, MIN_ANIME_RATINGS)
-    print(f"Final data size after filtering (100/100): {len(df)} ratings.")
-    return df
+        df = filter_anime(df, MIN_ANIME_RATINGS)
+        print(f"Final data size after filtering (100/100): {len(df)} ratings.")
+        return df
+    except Exception as e:
+        raise Exception(f"Error filtering dataset: {e}")
 
 
 def encode_user(df: pd.DataFrame) -> dict:
-    user_ids = df['user_id'].unique().tolist()
-    return {x: i for i, x in enumerate(user_ids)}
+    try:
+        user_ids = df['user_id'].unique().tolist()
+        return {x: i for i, x in enumerate(user_ids)}
+    except Exception as e:
+        raise Exception(f"Error encoding user: {e}")
 
 
 def encode_anime(params: dict, df: pd.DataFrame) -> dict:
-    anime_ids = df['anime_id'].unique().tolist()
-    anime_to_anime_encoded = {x: i for i, x in enumerate(anime_ids)}
-    anime_encoded_to_anime = {i: x for i, x in enumerate(anime_ids)}
+    try:
+        anime_ids = df['anime_id'].unique().tolist()
+        anime_to_anime_encoded = {x: i for i, x in enumerate(anime_ids)}
+        anime_encoded_to_anime = {i: x for i, x in enumerate(anime_ids)}
 
-    os.makedirs('models/artifacts', exist_ok=True)
-    save_path = params['feature_engineering']['anime_encoded_to_anime_path']
-    save_json(anime_encoded_to_anime, save_path)
+        os.makedirs('models/artifacts', exist_ok=True)
+        save_path = params['feature_engineering']['anime_encoded_to_anime_path']
+        save_json(anime_encoded_to_anime, save_path)
 
-    return anime_to_anime_encoded
+        return anime_to_anime_encoded
+    except Exception as e:
+        raise Exception(f"Error encoding anime: {e}")
 
 
 def encode_genre(df: pd.DataFrame) -> dict:
-    genre_names = df['main_genre'].unique().tolist()
-    return {x: i for i, x in enumerate(genre_names)}
+    try:
+        genre_names = df['main_genre'].unique().tolist()
+        return {x: i for i, x in enumerate(genre_names)}
+    except Exception as e:
+        raise Exception(f"Error encoding genre: {e}")
 
 
 def encode_dataset(params: dict, df: pd.DataFrame) -> pd.DataFrame:
-    # --- ENCODING ALL FEATURES (User, Anime, Genre) ---
+    try:
+        # --- ENCODING ALL FEATURES (User, Anime, Genre) ---
 
-    # Encoding User and Anime IDs
-    user_to_user_encoded = encode_user(df)
+        # Encoding User and Anime IDs
+        user_to_user_encoded = encode_user(df)
 
-    anime_to_anime_encoded = encode_anime(params, df)
+        anime_to_anime_encoded = encode_anime(params, df)
 
-    # Encoding Main Genre
-    genre_to_genre_encoded = encode_genre(df)
+        # Encoding Main Genre
+        genre_to_genre_encoded = encode_genre(df)
 
-    # Mapping encoded features to the DataFrame
-    df['user'] = df['user_id'].map(user_to_user_encoded)
-    df['anime'] = df['anime_id'].map(anime_to_anime_encoded)
-    df['genre_code'] = df['main_genre'].map(genre_to_genre_encoded)
+        # Mapping encoded features to the DataFrame
+        df['user'] = df['user_id'].map(user_to_user_encoded)
+        df['anime'] = df['anime_id'].map(anime_to_anime_encoded)
+        df['genre_code'] = df['main_genre'].map(genre_to_genre_encoded)
 
-    return df
+        return df
+    except Exception as e:
+        raise Exception(f"Error encoding dataset: {e}")
 
 
 def scale_rating(df: pd.DataFrame, min_rating: int, max_rating: int) -> pd.DataFrame:
-    df['rating'] = df['rating'].apply(lambda x: (x - min_rating) / (max_rating - min_rating))
-    return df
+    try:
+        df['rating'] = df['rating'].apply(lambda x: (x - min_rating) / (max_rating - min_rating))
+        return df
+    except Exception as e:
+        raise Exception(f"Error scaling rating: {e}")
 
 
 def shuffle_dataset(df: pd.DataFrame) -> pd.DataFrame:
-    return df.sample(frac=1, random_state=42)
+    try:
+        return df.sample(frac=1, random_state=42)
+    except Exception as e:
+        raise Exception(f"Error shuffling dataset: {e}")
 
 
 def main():
-    params = load_params()
-    rating_df_cleaned, anime_df_preprocessed = load_datasets(params)
+    try:
+        params = load_params()
+        rating_df_cleaned, anime_df_preprocessed = load_datasets(params)
 
-    rating_df_merged = merge_datasets(rating_df_cleaned, anime_df_preprocessed)
+        rating_df_merged = merge_datasets(rating_df_cleaned, anime_df_preprocessed)
 
-    
-    rating_df_cleaned = filter_dataset(rating_df_merged)
+        
+        rating_df_cleaned = filter_dataset(rating_df_merged)
 
-    min_rating = rating_df_cleaned['rating'].min()
-    max_rating = rating_df_cleaned['rating'].max()
+        min_rating = rating_df_cleaned['rating'].min()
+        max_rating = rating_df_cleaned['rating'].max()
 
-    rating_df_cleaned = encode_dataset(params, rating_df_cleaned)
+        rating_df_cleaned = encode_dataset(params, rating_df_cleaned)
 
-    rating_df_cleaned = scale_rating(rating_df_cleaned, min_rating, max_rating)
+        rating_df_cleaned = scale_rating(rating_df_cleaned, min_rating, max_rating)
 
-    rating_df_cleaned = shuffle_dataset(rating_df_cleaned)
+        rating_df_cleaned = shuffle_dataset(rating_df_cleaned)
 
-    save_data(rating_df_cleaned,params['data']['merged_data_path'])
-    save_params(params)
+        save_data(rating_df_cleaned,params['data']['merged_data_path'])
+        save_params(params)
+    except Exception as e:
+        raise Exception(f"Error in main: {e}")
 
 
 if __name__ == "__main__":
