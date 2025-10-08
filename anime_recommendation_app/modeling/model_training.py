@@ -2,9 +2,10 @@ from helper import load_data, load_params
 import tensorflow as tf
 from tensorflow import keras
 from model import HybridRecommenderNet
+import pandas as pd
+import numpy as np
 
-
-def load_train_valid(params):
+def load_train_valid(params: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     train_set_path = params['data']['train_set_path']
     valid_set_path = params['data']['valid_set_path']
 
@@ -14,14 +15,14 @@ def load_train_valid(params):
     return train_set, valid_set
 
 
-def split_target(df):
+def split_target(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     x = df[['user', 'anime', 'genre_code']].values
     y = df['rating'].values
 
     return x, y
 
 
-def initiate_model(params, merged_df):
+def initiate_model(params: dict, merged_df: pd.DataFrame) -> HybridRecommenderNet:
     regularization_strength = params['model']['regularization_strength']
     initializer = params['model']['initializer']
     
@@ -47,7 +48,7 @@ def initiate_earlystopping():
     )
 
 
-def train_model(params, model, x_train, y_train, x_valid, y_valid):
+def train_model(params: dict, model: HybridRecommenderNet, x_train: np.ndarray, y_train: np.ndarray, x_valid: np.ndarray, y_valid: np.ndarray) -> HybridRecommenderNet:
     learning_rate = params['model']['learning_rate']
     epoch = params['model']['epoch']
     batch_size = params['model']['batch_size']
@@ -75,7 +76,7 @@ def train_model(params, model, x_train, y_train, x_valid, y_valid):
     return model
 
 
-def save_model(model, params):
+def save_model(model: HybridRecommenderNet, params: dict):
     model_path = params['model']['model_path']
     model.save(model_path)
 

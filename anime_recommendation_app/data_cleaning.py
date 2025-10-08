@@ -4,7 +4,7 @@ from helper import load_data, load_params, save_data
 import os
 
 
-def load_datasets(params):
+def load_datasets(params: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     raw_rating_path = params['data']['raw_rating_path']
     raw_anime_path = params['data']['raw_anime_path']
 
@@ -13,14 +13,14 @@ def load_datasets(params):
     return rating_df, anime_df
 
 
-def clean_rating_data(rating_df):
+def clean_rating_data(rating_df: pd.DataFrame) -> pd.DataFrame:
     rating_df = rating_df.drop_duplicates()
     rating_df.loc[rating_df['rating'] == -1, "rating"] = 0
     rating_df['rating'] = rating_df['rating'].astype(np.float32)
     return rating_df
 
 
-def preprocess_anime_data(anime_df):
+def preprocess_anime_data(anime_df: pd.DataFrame) -> pd.DataFrame:
     anime_df['genre'] = anime_df['genre'].fillna('Unknown')
     anime_df['main_genre'] = anime_df['genre'].apply(
         lambda x: x.split(',')[0].strip() if pd.notna(x) and len(x.split(',')) > 0 else 'Unknown'
@@ -28,7 +28,7 @@ def preprocess_anime_data(anime_df):
     return anime_df
 
 
-def save_datasets(params, rating_cleaned, anime_preprocessed):
+def save_datasets(params: dict, rating_cleaned: pd.DataFrame, anime_preprocessed: pd.DataFrame):
     preprocessed_anime_path = params['data']['preprocessed_anime_path']
     cleaned_rating_path = params['data']['cleaned_rating_path']
 

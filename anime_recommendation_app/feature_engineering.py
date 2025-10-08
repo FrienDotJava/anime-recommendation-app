@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from helper import load_data, load_params, save_params, save_json, save_data
 
-def load_datasets(params):
+def load_datasets(params: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     preprocessed_anime_path = params['data']['preprocessed_anime_path']
     cleaned_rating_path = params['data']['cleaned_rating_path']
 
@@ -11,25 +11,25 @@ def load_datasets(params):
     return rating_df, anime_df
 
 
-def merge_datasets(rating_df, anime_df):
+def merge_datasets(rating_df: pd.DataFrame, anime_df: pd.DataFrame) -> pd.DataFrame:
     # Merge datasets to get 'type' and 'main_genre' columns
     df_merge = pd.merge(rating_df, anime_df[['anime_id', 'type', 'main_genre']], on='anime_id')
     return df_merge
 
 
-def filter_user(df, MIN_USER_RATINGS):
+def filter_user(df: pd.DataFrame, MIN_USER_RATINGS: int) -> pd.DataFrame:
     user_counts = df['user_id'].value_counts()
     active_users = user_counts[user_counts >= MIN_USER_RATINGS].index
     return df[df['user_id'].isin(active_users)]
 
 
-def filter_anime(df, MIN_ANIME_RATINGS):
+def filter_anime(df: pd.DataFrame, MIN_ANIME_RATINGS: int) -> pd.DataFrame:
     anime_counts = df['anime_id'].value_counts()
     popular_anime = anime_counts[anime_counts >= MIN_ANIME_RATINGS].index
     return df[df['anime_id'].isin(popular_anime)]
 
 
-def filter_dataset(params, df):
+def filter_dataset(params: dict, df: pd.DataFrame) -> pd.DataFrame:
     df = df[df['type'] == 'TV'].copy()
 
     MIN_USER_RATINGS = params['data']['min_user_ratings']
@@ -44,12 +44,12 @@ def filter_dataset(params, df):
     return df
 
 
-def encode_user(df):
+def encode_user(df: pd.DataFrame) -> dict:
     user_ids = df['user_id'].unique().tolist()
     return {x: i for i, x in enumerate(user_ids)}
 
 
-def encode_anime(params, df):
+def encode_anime(params: dict, df: pd.DataFrame) -> dict:
     anime_ids = df['anime_id'].unique().tolist()
     anime_to_anime_encoded = {x: i for i, x in enumerate(anime_ids)}
     anime_encoded_to_anime = {i: x for i, x in enumerate(anime_ids)}
@@ -61,12 +61,12 @@ def encode_anime(params, df):
     return anime_to_anime_encoded
 
 
-def encode_genre(df):
+def encode_genre(df: pd.DataFrame) -> dict:
     genre_names = df['main_genre'].unique().tolist()
     return {x: i for i, x in enumerate(genre_names)}
 
 
-def encode_dataset(params, df):
+def encode_dataset(params: dict, df: pd.DataFrame) -> pd.DataFrame:
     # --- ENCODING ALL FEATURES (User, Anime, Genre) ---
 
     # Encoding User and Anime IDs
@@ -85,12 +85,12 @@ def encode_dataset(params, df):
     return df
 
 
-def scale_rating(df, min_rating, max_rating):
+def scale_rating(df: pd.DataFrame, min_rating: int, max_rating: int) -> pd.DataFrame:
     df['rating'] = df['rating'].apply(lambda x: (x - min_rating) / (max_rating - min_rating))
     return df
 
 
-def shuffle_dataset(df):
+def shuffle_dataset(df: pd.DataFrame) -> pd.DataFrame:
     return df.sample(frac=1, random_state=42)
 
 

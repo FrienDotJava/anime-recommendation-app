@@ -1,7 +1,7 @@
 from helper import load_data, load_params, save_data
+import pandas as pd
 
-
-def split_data(df, valid_size):
+def split_data(df: pd.DataFrame, valid_size: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     train_indices = int(valid_size * df.shape[0])
     train_set, test_set = (
         df[:train_indices],
