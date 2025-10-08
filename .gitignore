@@ -1,7 +1,5 @@
 # Data
-/data/processed
-/data/interim
-/data/external
+data/
 
 # Mac OS-specific storage files
 .DS_Store

@@ -1,0 +1,26 @@
+data:
+  raw_anime_path: "./data/raw/anime.csv"
+  raw_rating_path: "./data/raw/rating.csv"
+  preprocessed_anime_path: "./data/interim/anime_preprocessed.csv"
+  cleaned_rating_path: "./data/interim/rating_cleaned.csv"
+  merged_data_path: "./data/interim/merged_data.csv"
+  train_set_path: "./data/processed/train.csv"
+  test_set_path: "./data/processed/test.csv"
+  min_user_ratings: 100
+  min_anime_ratings: 100
+
+feature_engineering:
+  anime_encoded_to_anime_path: "./models/artifacts/anime_encoded_to_anime.json"
+
+data_preprocessing:
+  valid_size: 0.8
+
+model:
+  regularization_strength: 1e-6
+  initializer: "he_normal"
+  embedding_size: 50
+  learning_rate: 0.0001
+  epoch: 100
+  batch_size: 2048
+  model_path: "./models/model.keras"
+  optimizer: "adam"

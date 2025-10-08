@@ -6,21 +6,33 @@ from keras import layers
 import mlflow
 import seaborn as sns
 import matplotlib.pyplot as plt
+# Install dependencies as needed:
+# pip install kagglehub[pandas-datasets]
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
 
-# --- Data Loading ---
-# Note: Assuming your 'data/raw/' paths are correct
-anime_df = pd.read_csv("data/raw/anime.csv")
-rating_df = pd.read_csv("data/raw/rating.csv")
+# Load the latest version
+anime_df = kagglehub.load_dataset(
+  KaggleDatasetAdapter.PANDAS,
+  "CooperUnion/anime-recommendations-database",
+  "anime.csv",
+)
 
-# --- Initial Cleaning ---
+rating_df = kagglehub.load_dataset(
+  KaggleDatasetAdapter.PANDAS,
+  "CooperUnion/anime-recommendations-database",
+  "rating.csv",
+)
+
+anime_df.to_csv("data/raw/anime.csv")
+rating_df.to_csv("data/raw/rating.csv")
+
+# Cleaning rating_df
 rating_df_cleaned = rating_df.drop_duplicates()
 rating_df_cleaned.loc[rating_df_cleaned['rating'] == -1, "rating"] = 0
 rating_df_cleaned['rating'] = rating_df_cleaned['rating'].values.astype(np.float32)
 
-# ====================================================================
-# ✨ FEATURE AUGMENTATION: Pre-process Main Genre on ANIME_DF ✨
-# This must happen before any subsets are created.
-# ====================================================================
+# FEATURE AUGMENTATION
 
 # Calculate 'main_genre' on the master anime DataFrame
 anime_df['genre'] = anime_df['genre'].fillna('Unknown')
@@ -28,22 +40,15 @@ anime_df['main_genre'] = anime_df['genre'].apply(
     lambda x: x.split(',')[0].strip() if pd.notna(x) and len(x.split(',')) > 0 else 'Unknown'
 )
 
-# ====================================================================
-# ✨ HYBRID FEATURE EXTRACTION & DATA MERGE (FOR TRAINING) ✨
-# ====================================================================
+# FEATURE EXTRACTION
 
-# 1. Merge datasets to get 'type' and 'main_genre' columns
+# Merge datasets to get 'type' and 'main_genre' columns
 rating_df_merged = pd.merge(rating_df_cleaned, anime_df[['anime_id', 'type', 'main_genre']], on='anime_id')
 
-# 2. Filter by 'TV' series type (Your best filtering practice)
+# Filter by 'TV' series type
 rating_df_cleaned = rating_df_merged[rating_df_merged['type'] == 'TV'].copy()
 
-# Note: We skip the redundant genre extraction since 'main_genre' is already merged.
-
-# ====================================================================
-# ✨ DATA FILTERING: REMOVING COLD START USERS AND ITEMS ✨
-# (Using optimal thresholds: 100/100)
-# ====================================================================
+# DATA FILTERING: REMOVING COLD START USERS AND ITEMS
 
 MIN_USER_RATINGS = 100
 MIN_ANIME_RATINGS = 100
@@ -62,14 +67,13 @@ rating_df_cleaned = rating_df_cleaned[rating_df_cleaned['anime_id'].isin(popular
 
 print(f"Final data size after filtering (100/100): {len(rating_df_cleaned)} ratings.")
 
-# ====================================================================
 
 min_rating = rating_df_cleaned['rating'].min()
 max_rating = rating_df_cleaned['rating'].max()
 
 # --- ENCODING ALL FEATURES (User, Anime, Genre) ---
 
-# Encoding User and Anime IDs (Standard)
+# Encoding User and Anime IDs
 user_ids = rating_df_cleaned['user_id'].unique().tolist()
 user_to_user_encoded = {x: i for i, x in enumerate(user_ids)}
 user_encoded_to_user = {i: x for i, x in enumerate(user_ids)}
@@ -77,7 +81,7 @@ anime_ids = rating_df_cleaned['anime_id'].unique().tolist()
 anime_to_anime_encoded = {x: i for i, x in enumerate(anime_ids)}
 anime_encoded_to_anime = {i: x for i, x in enumerate(anime_ids)}
 
-# Encoding Main Genre (New Feature)
+# Encoding Main Genre
 genre_names = rating_df_cleaned['main_genre'].unique().tolist()
 genre_to_genre_encoded = {x: i for i, x in enumerate(genre_names)}
 genre_encoded_to_genre = {i: x for i, x in enumerate(genre_names)}
@@ -88,10 +92,10 @@ rating_df_cleaned['anime'] = rating_df_cleaned['anime_id'].map(anime_to_anime_en
 # New encoded column for the hybrid model input
 rating_df_cleaned['genre_code'] = rating_df_cleaned['main_genre'].map(genre_to_genre_encoded)
 
-# Mengacak dataset
+# Shuffle dataset
 rating_df_cleaned = rating_df_cleaned.sample(frac=1, random_state=42)
 
-# --- HYBRID MODEL CLASS ---
+# Model Class
 
 class HybridRecommenderNet(tf.keras.Model):
 
