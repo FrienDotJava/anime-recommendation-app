@@ -1,0 +1,4 @@
+[core]
+    remote = anime-remote
+['remote "anime-remote"']
+    url = C:\Users\frend\AppData\Local\Temp\dvc-anime

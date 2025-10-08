@@ -1,0 +1,114 @@
+schema: '2.0'
+stages:
+  data_loading:
+    cmd: python .\anime_recommendation_app\data_loading.py
+    deps:
+    - path: .\anime_recommendation_app\data_loading.py
+      hash: md5
+      md5: 5472f38d4d1fb1484a905978023bf6a2
+      size: 1008
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 4ee7ea5b062578747b0e0498ce27e850.dir
+      size: 173801132
+      nfiles: 2
+  data_cleaning:
+    cmd: python .\anime_recommendation_app\data_cleaning.py
+    deps:
+    - path: anime_recommendation_app/data_cleaning.py
+      hash: md5
+      md5: a5ed479d5743293830d5c3007346723a
+      size: 2290
+    - path: data/raw
+      hash: md5
+      md5: 4ee7ea5b062578747b0e0498ce27e850.dir
+      size: 173801132
+      nfiles: 2
+    outs:
+    - path: data/interim/anime_preprocessed.csv
+      hash: md5
+      md5: e903377b955496603517ed7b94eeca11
+      size: 1151270
+    - path: data/interim/rating_cleaned.csv
+      hash: md5
+      md5: 58d216a53ed13a6c2a865e685cdcd105
+      size: 248353461
+  feature_engineering:
+    cmd: python .\anime_recommendation_app\feature_engineering.py
+    deps:
+    - path: .\anime_recommendation_app\feature_engineering.py
+      hash: md5
+      md5: 55ce07358d2d60f83c8e16b2422c0613
+      size: 5479
+    - path: data/interim/anime_preprocessed.csv
+      hash: md5
+      md5: e903377b955496603517ed7b94eeca11
+      size: 1151270
+    - path: data/interim/rating_cleaned.csv
+      hash: md5
+      md5: 58d216a53ed13a6c2a865e685cdcd105
+      size: 248353461
+    outs:
+    - path: data/interim/merged_data.csv
+      hash: md5
+      md5: 26ce3fda262d67efa81e96d29486aa00
+      size: 210159716
+    - path: models/artifacts/anime_encoded_to_anime.json
+      hash: md5
+      md5: 55f34c47be24f17f1e502c43fe78f248
+      size: 31813
+  data_preprocessing:
+    cmd: python .\anime_recommendation_app\data_preprocessing.py
+    deps:
+    - path: .\anime_recommendation_app\data_preprocessing.py
+      hash: md5
+      md5: 6bc0bd0c36c0391c48d031d89fb6e753
+      size: 1209
+    - path: data/interim/merged_data.csv
+      hash: md5
+      md5: 26ce3fda262d67efa81e96d29486aa00
+      size: 210159716
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: b90f0f1cf8f80ae95f9dbbfd703533e5.dir
+      size: 236533608
+      nfiles: 2
+  model_training:
+    cmd: python -m anime_recommendation_app.modeling.model_training
+    deps:
+    - path: .\anime_recommendation_app\modeling\model_training.py
+      hash: md5
+      md5: af3dc77b16bb1e7f2329ded64683ffed
+      size: 3963
+    - path: data/processed
+      hash: md5
+      md5: b90f0f1cf8f80ae95f9dbbfd703533e5.dir
+      size: 236533608
+      nfiles: 2
+    outs:
+    - path: models/model.keras
+      hash: md5
+      md5: 6137550b5d959b074d1ffbbc5ad57777
+      size: 11991794
+  model_evaluation:
+    cmd: python -m anime_recommendation_app.modeling.model_evaluation
+    deps:
+    - path: .\anime_recommendation_app\modeling\model_evaluation.py
+      hash: md5
+      md5: a9d54fe72c3a1066dfae341f95a91804
+      size: 3235
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 1b7c3ecd49e590afcf1cf23c5e99a13c
+      size: 47528128
+    - path: models/model.keras
+      hash: md5
+      md5: 6137550b5d959b074d1ffbbc5ad57777
+      size: 11991794
+    outs:
+    - path: reports/metrics.json
+      hash: md5
+      md5: 1ba3d61712dbe42175da666e2b63f17e
+      size: 91

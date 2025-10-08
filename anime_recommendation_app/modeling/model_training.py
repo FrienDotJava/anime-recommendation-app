@@ -1,19 +1,19 @@
-from helper import load_data, load_params
+from anime_recommendation_app.helper import load_data, load_params
 import tensorflow as tf
 from tensorflow import keras
-from model import HybridRecommenderNet
+from .model import HybridRecommenderNet
 import pandas as pd
 import numpy as np
 
-def load_train_valid(params: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_train_test(params: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     try:
         train_set_path = params['data']['train_set_path']
-        valid_set_path = params['data']['valid_set_path']
+        test_set_path = params['data']['test_set_path']
 
         train_set = load_data(train_set_path)
-        valid_set = load_data(valid_set_path)
+        test_set = load_data(test_set_path)
 
-        return train_set, valid_set
+        return train_set, test_set
     except Exception as e:
         raise Exception(f"Error loading data: {e}")
 
@@ -30,7 +30,7 @@ def split_target(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
 
 def initiate_model(params: dict, merged_df: pd.DataFrame) -> HybridRecommenderNet:
     try:
-        regularization_strength = params['model']['regularization_strength']
+        regularization_strength = float(params['model']['regularization_strength'])
         initializer = params['model']['initializer']
         
         num_users = len(merged_df['user'].unique())
@@ -60,7 +60,7 @@ def initiate_earlystopping():
         raise Exception(f"Error initiating earlystopping: {e}")
 
 
-def train_model(params: dict, model: HybridRecommenderNet, x_train: np.ndarray, y_train: np.ndarray, x_valid: np.ndarray, y_valid: np.ndarray) -> HybridRecommenderNet:
+def train_model(params: dict, model: HybridRecommenderNet, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray) -> HybridRecommenderNet:
     try:
         learning_rate = params['model']['learning_rate']
         epoch = params['model']['epoch']
@@ -81,7 +81,7 @@ def train_model(params: dict, model: HybridRecommenderNet, x_train: np.ndarray, 
             y = y_train,
             batch_size = batch_size,
             epochs = epoch,
-            validation_data = (x_valid, y_valid),
+            validation_data = (x_test, y_test),
             callbacks=[early_stopping],
             verbose=1
         )
@@ -104,15 +104,15 @@ def main():
         params = load_params()
         merged_data_path = params['data']['merged_data_path']
         
-        train_set, valid_set = load_train_valid(params)
+        train_set, test_set = load_train_test(params)
         merged_df = load_data(merged_data_path)
 
         x_train, y_train = split_target(train_set)
-        x_valid, y_valid = split_target(valid_set)
+        x_test, y_test = split_target(test_set)
 
         model = initiate_model(params, merged_df)
 
-        model = train_model(params, model, x_train, y_train, x_valid, y_valid)
+        model = train_model(params, model, x_train, y_train, x_test, y_test)
 
         save_model(model, params)
     except Exception as e:

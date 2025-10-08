@@ -1,5 +1,6 @@
 from helper import load_data, load_params, save_data
 import pandas as pd
+import os
 
 def split_data(df: pd.DataFrame, valid_size: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     try:
@@ -26,6 +27,9 @@ def main():
 
         train_set, test_set = split_data(merged_df, VALID_SIZE)
 
+        processed_path = os.path.join('data','processed')
+        os.makedirs(processed_path)
+        
         save_data(train_set, train_set_path)
         save_data(test_set, test_set_path)
     except Exception as e:

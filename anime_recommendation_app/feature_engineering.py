@@ -134,7 +134,7 @@ def main():
         rating_df_merged = merge_datasets(rating_df_cleaned, anime_df_preprocessed)
 
         
-        rating_df_cleaned = filter_dataset(rating_df_merged)
+        rating_df_cleaned = filter_dataset(params, rating_df_merged)
 
         min_rating = rating_df_cleaned['rating'].min()
         max_rating = rating_df_cleaned['rating'].max()
