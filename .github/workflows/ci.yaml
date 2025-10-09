@@ -31,5 +31,7 @@ jobs:
       #     DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
       #   run: |
       #     dvc repro
+      - name: Check DVC remote 
+        run: dvc remote list
       - name: Check DVC status 
         run: dvc status -c
