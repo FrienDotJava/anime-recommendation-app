@@ -17,8 +17,12 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install dvc
+          pip install "dvc[gcs]"
+      - name: Write service account key
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo "$GCP_SA_KEY" > "$RUNNER_TEMP/key.json"
       
       # - name: Run DVC Pipeline
       #   env: 
@@ -26,4 +30,4 @@ jobs:
       #   run: |
       #     dvc repro
       - name: Check DVC status 
-        run: dvc status
+        run: dvc status -c
