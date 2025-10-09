@@ -19,19 +19,17 @@ jobs:
           pip install --upgrade pip
           pip install dvc-gs
           pip install "dvc[gcs]"
+
       - name: Write service account key
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo "$GCP_SA_KEY" > "$RUNNER_TEMP/key.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/key.json" >> $GITHUB_ENV
-      
-      # - name: Run DVC Pipeline
-      #   env: 
-      #     DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-      #   run: |
-      #     dvc repro
-      - name: Check DVC remote 
-        run: dvc remote list
+
+      - name: Force DVC remote URL in CI
+        if: ${{ secrets.GCS_DVC_URL != '' }}
+        run: dvc remote modify --local gcsremote url "${{ secrets.GCS_DVC_URL }}"
+
       - name: Check DVC status 
-        run: dvc status -c
+        run: dvc status -r gcsremote -c
