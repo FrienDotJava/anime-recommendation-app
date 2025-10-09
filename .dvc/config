@@ -1,4 +1,6 @@
 [core]
-    remote = anime-remote
+    remote = gcsremote
 ['remote "anime-remote"']
     url = C:\Users\frend\AppData\Local\Temp\dvc-anime
+['remote "gcsremote"']
+    url = gs://anime-bucket
