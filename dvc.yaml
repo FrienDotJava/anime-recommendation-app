@@ -1,12 +1,12 @@
 stages:
   data_loading:
-    cmd: python .\anime_recommendation_app\data_loading.py
+    cmd: python anime_recommendation_app/data_loading.py
     deps:
-    - .\anime_recommendation_app\data_loading.py
+    - anime_recommendation_app/data_loading.py
     outs:
     - data/raw
   data_cleaning:
-    cmd: python .\anime_recommendation_app\data_cleaning.py
+    cmd: python anime_recommendation_app/data_cleaning.py
     deps:
     - anime_recommendation_app/data_cleaning.py
     - data/raw
@@ -14,32 +14,32 @@ stages:
     - data/interim/anime_preprocessed.csv
     - data/interim/rating_cleaned.csv
   feature_engineering:
-    cmd: python .\anime_recommendation_app\feature_engineering.py
+    cmd: python anime_recommendation_app/feature_engineering.py
     deps:
-    - .\anime_recommendation_app\feature_engineering.py
+    - anime_recommendation_app/feature_engineering.py
     - data/interim/anime_preprocessed.csv
     - data/interim/rating_cleaned.csv
     outs:
     - data/interim/merged_data.csv
     - models/artifacts/anime_encoded_to_anime.json
   data_preprocessing:
-    cmd: python .\anime_recommendation_app\data_preprocessing.py
+    cmd: python anime_recommendation_app/data_preprocessing.py
     deps:
-    - .\anime_recommendation_app\data_preprocessing.py
+    - anime_recommendation_app/data_preprocessing.py
     - data/interim/merged_data.csv
     outs:
     - data/processed
   model_training:
     cmd: python -m anime_recommendation_app.modeling.model_training
     deps:
-    - .\anime_recommendation_app\modeling\model_training.py
+    - anime_recommendation_app/modeling/model_training.py
     - data/processed
     outs:
     - models/model.keras
   model_evaluation:
     cmd: python -m anime_recommendation_app.modeling.model_evaluation
     deps:
-    - .\anime_recommendation_app\modeling\model_evaluation.py
+    - anime_recommendation_app/modeling/model_evaluation.py
     - data/processed/test.csv
     - models/model.keras
     metrics:
