@@ -24,6 +24,7 @@ jobs:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo "$GCP_SA_KEY" > "$RUNNER_TEMP/key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/key.json" >> $GITHUB_ENV
       
       # - name: Run DVC Pipeline
       #   env: 
