@@ -17,6 +17,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
+          pip install dvc-gs
           pip install "dvc[gcs]"
       - name: Write service account key
         env:
