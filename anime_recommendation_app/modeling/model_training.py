@@ -33,7 +33,7 @@ def initiate_model(params: dict, merged_df: pd.DataFrame) -> HybridRecommenderNe
         regularization_strength = float(params['model']['regularization_strength'])
         initializer = params['model']['initializer']
         
-        num_users = len(merged_df['user'].unique())
+        num_users = len(merged_df['user'].unique()) + 1000
         num_anime = len(merged_df['anime'].unique())
         num_genres = len(merged_df['main_genre'].unique())
 

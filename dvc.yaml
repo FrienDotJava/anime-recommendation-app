@@ -19,14 +19,23 @@ stages:
     - anime_recommendation_app/feature_engineering.py
     - data/interim/anime_preprocessed.csv
     - data/interim/rating_cleaned.csv
+    params:
+    - data.min_user_ratings
+    - data.min_anime_ratings
     outs:
     - data/interim/merged_data.csv
+    - models/artifacts/user_to_user_encoded.json
+    - models/artifacts/anime_to_anime_encoded.json
     - models/artifacts/anime_encoded_to_anime.json
+    - models/artifacts/genre_to_genre_encoded.json
+    - models/artifacts/rating_scale.json
   data_preprocessing:
     cmd: python anime_recommendation_app/data_preprocessing.py
     deps:
     - anime_recommendation_app/data_preprocessing.py
     - data/interim/merged_data.csv
+    params:
+    - data_preprocessing.valid_size
     outs:
     - data/processed
   model_training:
@@ -34,6 +43,14 @@ stages:
     deps:
     - anime_recommendation_app/modeling/model_training.py
     - data/processed
+    params:
+    - model.regularization_strength
+    - model.initializer
+    - model.embedding_size
+    - model.learning_rate
+    - model.epoch
+    - model.batch_size
+    - model.optimizer
     outs:
     - models/model.keras
   model_evaluation:

@@ -9,7 +9,11 @@ data:
   min_user_ratings: 100
   min_anime_ratings: 100
 feature_engineering:
+  user_to_user_encoded_path: ./models/artifacts/user_to_user_encoded.json
+  anime_to_anime_encoded_path: ./models/artifacts/anime_to_anime_encoded.json
   anime_encoded_to_anime_path: ./models/artifacts/anime_encoded_to_anime.json
+  genre_to_genre_encoded_path: ./models/artifacts/genre_to_genre_encoded.json
+  rating_scale_path: ./models/artifacts/rating_scale.json
 data_preprocessing:
   valid_size: 0.8
 model:
@@ -22,4 +26,4 @@ model:
   model_path: ./models/model.keras
   optimizer: adam
 model_evaluation:
-  metrics_path: "reports/metrics.json"
+  metrics_path: reports/metrics.json

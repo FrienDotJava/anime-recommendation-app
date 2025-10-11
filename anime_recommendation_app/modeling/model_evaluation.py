@@ -10,14 +10,14 @@ import json
 import dagshub
 from mlflow.models import infer_signature
 
-dagshub_token = os.getenv("DAGSHUB_TOKEN")
-if not dagshub_token:
-    raise EnvironmentError("DAGSHUB_TOKEN is not set")
+# dagshub_token = os.getenv("DAGSHUB_TOKEN")
+# if not dagshub_token:
+#     raise EnvironmentError("DAGSHUB_TOKEN is not set")
 
-os.environ["MLFLOW_TRACKING_USERNAME"]= "FrienDotJava"
-os.environ["MLFLOW_TRACKING_PASSWORD"]= dagshub_token
+# os.environ["MLFLOW_TRACKING_USERNAME"]= "FrienDotJava"
+# os.environ["MLFLOW_TRACKING_PASSWORD"]= dagshub_token
 
-# dagshub.init(repo_owner='FrienDotJava', repo_name='anime-recommendation-app', mlflow=True)
+dagshub.init(repo_owner='FrienDotJava', repo_name='anime-recommendation-app', mlflow=True)
 
 mlflow.set_tracking_uri("https://dagshub.com/FrienDotJava/anime-recommendation-app.mlflow")
 mlflow.set_experiment("Best Model")

@@ -6,8 +6,6 @@ from keras import layers
 import mlflow
 import seaborn as sns
 import matplotlib.pyplot as plt
-# Install dependencies as needed:
-# pip install kagglehub[pandas-datasets]
 import kagglehub
 from kagglehub import KaggleDatasetAdapter
 
@@ -146,7 +144,6 @@ mlflow.set_tracking_uri("https://dagshub.com/FrienDotJava/anime-recommendation-a
 mlflow.set_experiment("Experiment on hybrid model")
 with mlflow.start_run():
     # Train test split
-    # Input 'x' now includes the genre code
     x = rating_df_cleaned[['user', 'anime', 'genre_code']].values
 
     # Membuat variabel y untuk membuat rating dari hasil
@@ -162,7 +159,6 @@ with mlflow.start_run():
         y[train_indices:]
     )
 
-    # --- Model Instantiation ---
     regularization_strength = 1e-6
     initializer = 'he_normal'
     
@@ -173,7 +169,6 @@ with mlflow.start_run():
     embedding_size = 50
     learning_rate = 0.0001
     
-    # Use the new HybridRecommenderNet and pass num_genres
     model = HybridRecommenderNet(num_users, num_anime, num_genres, embedding_size) 
 
     # model compile
@@ -208,7 +203,6 @@ with mlflow.start_run():
 
     loss, rmse = model.evaluate(x_val, y_val)
     
-    # --- MLflow Logging ---
     mlflow.log_param("valid_size",valid_size)
     mlflow.log_param("embedding_size",embedding_size)
     mlflow.log_param("regularization_strength",regularization_strength)
@@ -223,18 +217,16 @@ with mlflow.start_run():
     mlflow.log_metric("rmse", rmse)
     print(f"\nMLflow logged. Validation RMSE: {rmse:.4f}")
     
-# --- Recommendation Logic ---
+# Inference
 
 user_id = rating_df_cleaned.user_id.sample(1).iloc[0]
 anime_watched_by_user = rating_df_cleaned[rating_df_cleaned.user_id == user_id]
 
 # 1. Get anime not watched by the user
-# 'anime_df' already contains the 'main_genre' column now
 anime_not_watched_ids = anime_df[~anime_df['anime_id'].isin(anime_watched_by_user.anime_id.values)]
 anime_not_watched_ids = anime_not_watched_ids[anime_not_watched_ids['anime_id'].isin(anime_to_anime_encoded.keys())]
 
 # 2. Filter for only the genres present in our training set and encode features
-# This filtering step (which previously caused the KeyError) now works because 'main_genre' exists.
 anime_not_watched_ids = anime_not_watched_ids[anime_not_watched_ids['main_genre'].isin(genre_names)].copy()
 
 # Encode the anime and genre features for the prediction array

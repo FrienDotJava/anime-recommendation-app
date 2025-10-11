@@ -58,10 +58,15 @@ def filter_dataset(params: dict, df: pd.DataFrame) -> pd.DataFrame:
         raise Exception(f"Error filtering dataset: {e}")
 
 
-def encode_user(df: pd.DataFrame) -> dict:
+def encode_user(params: dict, df: pd.DataFrame) -> dict:
     try:
         user_ids = df['user_id'].unique().tolist()
-        return {x: i for i, x in enumerate(user_ids)}
+        user_to_user_encoded = {x: i for i, x in enumerate(user_ids)}
+
+        save_path = params['feature_engineering']['user_to_user_encoded_path']
+        save_json(user_to_user_encoded, save_path)
+
+        return user_to_user_encoded
     except Exception as e:
         raise Exception(f"Error encoding user: {e}")
 
@@ -72,35 +77,37 @@ def encode_anime(params: dict, df: pd.DataFrame) -> dict:
         anime_to_anime_encoded = {x: i for i, x in enumerate(anime_ids)}
         anime_encoded_to_anime = {i: x for i, x in enumerate(anime_ids)}
 
-        os.makedirs('models/artifacts', exist_ok=True)
         save_path = params['feature_engineering']['anime_encoded_to_anime_path']
+        save_path2 = params['feature_engineering']['anime_to_anime_encoded_path']
         save_json(anime_encoded_to_anime, save_path)
+        save_json(anime_to_anime_encoded, save_path2)
 
         return anime_to_anime_encoded
     except Exception as e:
         raise Exception(f"Error encoding anime: {e}")
 
 
-def encode_genre(df: pd.DataFrame) -> dict:
+def encode_genre(params: dict, df: pd.DataFrame) -> dict:
     try:
         genre_names = df['main_genre'].unique().tolist()
-        return {x: i for i, x in enumerate(genre_names)}
+        genre_to_genre_encoded = {x: i for i, x in enumerate(genre_names)}
+
+        save_path = params['feature_engineering']['genre_to_genre_encoded_path']
+        save_json(genre_to_genre_encoded, save_path)
+
+        return genre_to_genre_encoded
     except Exception as e:
         raise Exception(f"Error encoding genre: {e}")
 
 
 def encode_dataset(params: dict, df: pd.DataFrame) -> pd.DataFrame:
     try:
-        # --- ENCODING ALL FEATURES (User, Anime, Genre) ---
+        os.makedirs('models/artifacts', exist_ok=True)
 
-        # Encoding User and Anime IDs
-        user_to_user_encoded = encode_user(df)
-
+        user_to_user_encoded = encode_user(params, df)
         anime_to_anime_encoded = encode_anime(params, df)
-
-        # Encoding Main Genre
-        genre_to_genre_encoded = encode_genre(df)
-
+        genre_to_genre_encoded = encode_genre(params, df)
+        
         # Mapping encoded features to the DataFrame
         df['user'] = df['user_id'].map(user_to_user_encoded)
         df['anime'] = df['anime_id'].map(anime_to_anime_encoded)
@@ -147,6 +154,7 @@ def main():
 
         save_data(rating_df_cleaned,params['data']['merged_data_path'])
         save_params(params)
+        save_json({"min": float(min_rating), "max": float(max_rating)}, params['feature_engineering']['rating_scale_path'])
     except Exception as e:
         raise Exception(f"Error in main: {e}")
 
