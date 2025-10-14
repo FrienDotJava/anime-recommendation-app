@@ -5,5 +5,5 @@ services:
     runtime: python
     plan: free
     autoDeploy: false
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && pip install "dvc[gcs]" && export TMPDIR=/tmp TEMP=/tmp TMP=/tmp && mkdir -p /tmp/dvc && printf '%s' "$GCP_SA_KEY" > /tmp/key.json && export GOOGLE_APPLICATION_CREDENTIALS=/tmp/key.json && dvc config --local core.tmp_dir /tmp/dvc && dvc pull
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
