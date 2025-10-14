@@ -7,7 +7,6 @@ import tensorflow as tf
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
-
 from anime_recommendation_app.modeling.model import HybridRecommenderNet
 
 ARTIFACT_DIR = os.getenv("ARTIFACT_DIR", "./models/artifacts")
