@@ -1,4 +1,3 @@
-# app.py
 import os
 import json
 import numpy as np
@@ -59,7 +58,7 @@ def load_artifacts():
                 custom_objects={'HybridRecommenderNet': HybridRecommenderNet}
             )
 
-    # Load data for lookups
+    # Load anime_df and create main_genre column
     anime_df = pd.read_csv(ANIME_CSV)
     if "genre" not in anime_df.columns:
         anime_df["genre"] = "Unknown"
@@ -148,7 +147,7 @@ def predict(req: PredictRequest):
             raise HTTPException(status_code=400, detail="Anime main_genre not recognized by encoder.")
         raise
 
-    y_pred = float(model.predict(X, verbose=0).reshape(-1)[0])  # [0,1]
+    y_pred = float(model.predict(X, verbose=0).reshape(-1)[0])
     out = PredictResponse(
         user_id=req.user_id,
         anime_id=req.anime_id,
@@ -161,7 +160,7 @@ def predict(req: PredictRequest):
 def recommend(req: RecommendRequest):
     candidates = filter_candidate_anime(req.allowed_genres, req.only_type, req.exclude_anime_ids)
 
-    # If we have a known user, give recommendation based on preference (collaborative + content base)
+    # If we have a known user, give recommendation based on preference
     if req.user_id is not None and req.user_id in user_to_enc:
         user_code = user_to_enc[req.user_id]
         # Build [user_code, anime_code, genre_code] for all candidates
@@ -177,7 +176,7 @@ def recommend(req: RecommendRequest):
     else:
         # Cold-start: score by genre preference if provided. Otherwise, return popular/random
         if not req.preferred_genres:
-            # simple neutral score = 0.5; you can plug a popularity prior
+            # simple neutral score = 0.5
             candidates = candidates.assign(score=0.5)
             top = candidates.sample(n=min(req.top_k, len(candidates)), random_state=42)
         else:
@@ -198,10 +197,9 @@ def recommend(req: RecommendRequest):
     ]
     return RecommendResponse(items=items)
 
-# ---- Config for cold-start pool ----
 COLD_SLOTS = int(os.getenv("COLD_SLOTS", "1000"))
 COLD_BASE_INDEX = None  # set at startup based on loaded encoders
-cold_slot_in_use: Dict[str, int] = {}  # map session/user token -> reserved slot
+cold_slot_in_use: Dict[str, int] = {}  # map session/user token
 
 class RatedItem(BaseModel):
     anime_id: int
@@ -233,7 +231,6 @@ def get_or_assign_cold_slot(session_key: str) -> int:
 
 
 def _normalize(y: np.ndarray) -> np.ndarray:
-    # assumes rating_scale["min"], ["max"]
     return (y - rating_scale["min"]) / max(1e-8, (rating_scale["max"] - rating_scale["min"]))
 
 def _prepare_bootstrap_xy(rated: List[RatedItem], cold_user_code: int):
@@ -259,13 +256,12 @@ def _prepare_bootstrap_xy(rated: List[RatedItem], cold_user_code: int):
 @app.post("/bootstrap_recommend", response_model=BootstrapResponse)
 @app.post("/bootstrap_recommend", response_model=BootstrapResponse)
 def bootstrap_recommend(req: BootstrapRequest):
-    # 1) Pick or create a cold slot
+    # Pick or create a cold slot
     cold_user_code = get_or_assign_cold_slot(req.session_key)
 
-    # 2) Build training mini-batch from user’s rated items
+    # Build training mini-batch from user’s rated items
     X, y = _prepare_bootstrap_xy(req.rated, cold_user_code)
 
-    # 3) Freeze all but user embedding/bias; quick fit
     for layer in model.layers:
         layer.trainable = False
     try:
@@ -283,17 +279,17 @@ def bootstrap_recommend(req: BootstrapRequest):
     )
     model.fit(X, y, batch_size=min(64, len(X)), epochs=5, verbose=0)
 
-    # 4) Build candidate pool and EXCLUDE already-rated items
+    # Build candidate pool and EXCLUDE already-rated items
     rated_ids = {int(r.anime_id) for r in req.rated}
     candidates = filter_candidate_anime(
         req.allowed_genres,
         req.only_type,
-        exclude_anime_ids=list(rated_ids),   # <-- key change
+        exclude_anime_ids=list(rated_ids),
     )
     if candidates.empty:
         raise HTTPException(status_code=404, detail="No candidates after filters.")
 
-    # 5) Score & return
+    # Score
     anime_codes = candidates["anime_id"].map(anime_to_enc)
     genre_codes = candidates["main_genre"].map(genre_to_enc)
     Xc = np.column_stack([
