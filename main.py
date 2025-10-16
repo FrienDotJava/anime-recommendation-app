@@ -257,38 +257,43 @@ def _prepare_bootstrap_xy(rated: List[RatedItem], cold_user_code: int):
     return X, y
 
 @app.post("/bootstrap_recommend", response_model=BootstrapResponse)
+@app.post("/bootstrap_recommend", response_model=BootstrapResponse)
 def bootstrap_recommend(req: BootstrapRequest):
-    # Pick or create a cold slot for this session
+    # 1) Pick or create a cold slot
     cold_user_code = get_or_assign_cold_slot(req.session_key)
 
-    # Build training mini-batch from user’s rated items
+    # 2) Build training mini-batch from user’s rated items
     X, y = _prepare_bootstrap_xy(req.rated, cold_user_code)
 
-    # Freeze everything except user_embedding and user_bias
+    # 3) Freeze all but user embedding/bias; quick fit
     for layer in model.layers:
         layer.trainable = False
     try:
         model.user_embedding.trainable = True
         model.user_bias.trainable = True
     except Exception:
-        
         for l in model.layers:
             if "user_embedding" in l.name or "user_bias" in l.name:
                 l.trainable = True
 
-    # Quick personalization fit
     model.compile(
         loss=tf.keras.losses.MeanSquaredError(),
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-2),  # faster convergence
-        metrics=[tf.keras.metrics.RootMeanSquaredError()]
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-2),
+        metrics=[tf.keras.metrics.RootMeanSquaredError()],
     )
     model.fit(X, y, batch_size=min(64, len(X)), epochs=5, verbose=0)
 
-    # Score candidates and return top-K (same filtering as /recommend)
-    candidates = filter_candidate_anime(req.allowed_genres, req.only_type, exclude_anime_ids=None)
+    # 4) Build candidate pool and EXCLUDE already-rated items
+    rated_ids = {int(r.anime_id) for r in req.rated}
+    candidates = filter_candidate_anime(
+        req.allowed_genres,
+        req.only_type,
+        exclude_anime_ids=list(rated_ids),   # <-- key change
+    )
     if candidates.empty:
         raise HTTPException(status_code=404, detail="No candidates after filters.")
 
+    # 5) Score & return
     anime_codes = candidates["anime_id"].map(anime_to_enc)
     genre_codes = candidates["main_genre"].map(genre_to_enc)
     Xc = np.column_stack([
@@ -309,7 +314,4 @@ def bootstrap_recommend(req: BootstrapRequest):
         )
         for _, r in top.iterrows()
     ]
-    return BootstrapResponse(
-        personalized_user_code=cold_user_code,
-        items=items
-    )
+    return BootstrapResponse(personalized_user_code=cold_user_code, items=items)
